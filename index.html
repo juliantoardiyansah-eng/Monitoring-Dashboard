@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Monitoring Dashboard</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Chart.js & SheetJS & html2pdf & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <i data-lucide="layout-dashboard"></i>
+      </div>
+      <div>
+        <h1>Project Monitoring Dashboard</h1>
+        <p class="subtitle">Upload Excel & Real-Time Analytics Dashboard</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="last-updated" id="lastUpdatedBadge">
+        <i data-lucide="clock"></i>
+        <span>Data: Sample Dataset (Default)</span>
+      </div>
+      <button class="btn btn-secondary" id="resetSampleBtn" title="Kosongkan semua data task">
+        <i data-lucide="trash-2"></i> Kosongkan Data
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Upload Dropzone Section -->
+    <section class="upload-section">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="file-input">
+        <div class="dropzone-content">
+          <div class="dropzone-icon">
+            <i data-lucide="file-up"></i>
+          </div>
+          <div class="dropzone-text">
+            <h3>Tarik & Lepas File Excel (.xlsx / .csv) di Sini</h3>
+            <p>atau <span class="browse-link">Cari File dari Komputer</span></p>
+          </div>
+          <div class="dropzone-info">
+            <span><i data-lucide="check-circle-2"></i> Format didukung: Project, Task Name, Status, Type, PIC, From, Due
+              Date</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI Summary Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass kpi-card-hoverable" id="kpiCardProjects" style="cursor: pointer;">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Projects</span>
+          <div class="kpi-icon icon-indigo"><i data-lucide="folder-kanban"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiTotalProjects">0</div>
+        <div class="kpi-subtext" id="kpiTotalProjectsSub">Active project streams • <span>Arahkan cursor</span></div>
+
+        <!-- Total Projects Interactive Popover -->
+        <div class="kpi-popover popover-indigo" id="projectsPopover">
+          <div class="popover-header header-indigo">
+            <i data-lucide="folder-kanban"></i>
+            <span>Daftar Proyek (<span id="projectsPopoverCount">0</span>)</span>
+          </div>
+          <div class="popover-body project-pills-wrapper" id="projectsListBody">
+            <!-- Dynamic Project Name Pills -->
+          </div>
+          <div class="popover-footer">
+            <i data-lucide="mouse-pointer-click"></i> Klik nama proyek untuk memfilter
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card glass">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Tasks</span>
+          <div class="kpi-icon icon-blue"><i data-lucide="check-square"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiTotalTasks">0</div>
+        <div class="kpi-subtext" id="kpiTotalTasksSub">Monitored tasks</div>
+      </div>
+
+      <div class="kpi-card glass">
+        <div class="kpi-header">
+          <span class="kpi-title">Completion Rate</span>
+          <div class="kpi-icon icon-emerald"><i data-lucide="trending-up"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiCompletionRate">0%</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="kpiProgressBar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card glass">
+        <div class="kpi-header">
+          <span class="kpi-title">In Progress & Todo</span>
+          <div class="kpi-icon icon-amber"><i data-lucide="loader"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiActiveTasks">0</div>
+        <div class="kpi-subtext" id="kpiActiveTasksSub">Tasks being worked on</div>
+      </div>
+    </section>
+
+    <!-- Global Filters Section -->
+    <section class="filters-card glass">
+      <div class="filters-header">
+        <div class="filters-title">
+          <i data-lucide="filter"></i>
+          <span>Filter Data Interactive</span>
+        </div>
+        <button class="btn btn-sm btn-ghost" id="clearFiltersBtn">
+          <i data-lucide="rotate-ccw"></i> Reset Filters
+        </button>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-group search-group">
+          <label><i data-lucide="search"></i> Cari Task / Project / PIC</label>
+          <div class="search-input-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Ketik kata kunci proyek, task, atau PIC..."
+              class="input-field search-input-field">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Project</label>
+          <div class="tags-select-container" id="projectTagsContainer">
+            <div class="tags-select-input-box" id="projectTagsInputBox">
+              <button type="button" class="tags-clear-all-btn" id="projectClearAllBtn" title="Clear project tags"
+                style="display: none;">&times;</button>
+              <div class="tags-wrapper" id="projectTagsWrapper">
+                <span class="tags-placeholder" id="projectTagsPlaceholder">Semua Project...</span>
+              </div>
+              <i data-lucide="chevron-down" class="tags-chevron-icon"></i>
+            </div>
+            <div class="tags-select-dropdown" id="projectTagsDropdown"></div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Status</label>
+          <div class="tags-select-container" id="statusTagsContainer">
+            <div class="tags-select-input-box" id="statusTagsInputBox">
+              <button type="button" class="tags-clear-all-btn" id="statusClearAllBtn" title="Clear status tags"
+                style="display: none;">&times;</button>
+              <div class="tags-wrapper" id="statusTagsWrapper">
+                <span class="tags-placeholder" id="statusTagsPlaceholder">Semua Status...</span>
+              </div>
+              <i data-lucide="chevron-down" class="tags-chevron-icon"></i>
+            </div>
+            <div class="tags-select-dropdown" id="statusTagsDropdown"></div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Type / Kategori</label>
+          <div class="tags-select-container" id="typeTagsContainer">
+            <div class="tags-select-input-box" id="typeTagsInputBox">
+              <button type="button" class="tags-clear-all-btn" id="typeClearAllBtn" title="Clear type tags"
+                style="display: none;">&times;</button>
+              <div class="tags-wrapper" id="typeTagsWrapper">
+                <span class="tags-placeholder" id="typeTagsPlaceholder">Semua Type...</span>
+              </div>
+              <i data-lucide="chevron-down" class="tags-chevron-icon"></i>
+            </div>
+            <div class="tags-select-dropdown" id="typeTagsDropdown"></div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>PIC / Resource</label>
+          <div class="tags-select-container" id="picTagsContainer">
+            <div class="tags-select-input-box" id="picTagsInputBox">
+              <button type="button" class="tags-clear-all-btn" id="picClearAllBtn" title="Clear PIC tags"
+                style="display: none;">&times;</button>
+              <div class="tags-wrapper" id="picTagsWrapper">
+                <span class="tags-placeholder" id="picTagsPlaceholder">Semua PIC...</span>
+              </div>
+              <i data-lucide="chevron-down" class="tags-chevron-icon"></i>
+            </div>
+            <div class="tags-select-dropdown" id="picTagsDropdown"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visualizations / Charts Grid -->
+    <section class="charts-grid">
+      <!-- Chart 1: Status Breakdown -->
+      <div class="chart-card glass">
+        <div class="chart-header">
+          <h3><i data-lucide="pie-chart"></i> Distribusi Status Task</h3>
+          <span class="badge-tag">Breakdown</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Workload per PIC -->
+      <div class="chart-card glass">
+        <div class="chart-header">
+          <h3><i data-lucide="users"></i> Workload & Task per PIC</h3>
+          <span class="badge-tag">Resource Allocation</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chartPIC"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Type Breakdown -->
+      <div class="chart-card glass">
+        <div class="chart-header">
+          <h3><i data-lucide="layers"></i> Kategori Pekerjaan (Type)</h3>
+          <span class="badge-tag">Document vs System vs People</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chartType"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Top Projects Completion -->
+      <div class="chart-card glass">
+        <div class="chart-header">
+          <h3><i data-lucide="bar-chart-3"></i> Volume Task per Project</h3>
+          <span class="badge-tag">Project Breakdown</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chartProject"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Table Section -->
+    <section class="table-card glass">
+      <div class="table-header">
+        <div class="table-title">
+          <i data-lucide="table"></i>
+          <h3>Detail Task List</h3>
+          <span class="row-counter" id="rowCountBadge">Showing 0 rows</span>
+        </div>
+
+        <div class="table-actions">
+          <button class="btn btn-primary btn-sm" id="exportPdfBtn" title="Export PDF laporan format Weekly Update">
+            <i data-lucide="file-down"></i> Export PDF (Template)
+          </button>
+          <button class="btn btn-secondary btn-sm" id="exportExcelBtn">
+            <i data-lucide="download"></i> Export Excel
+          </button>
+          <button class="btn btn-secondary btn-sm" id="exportCSVBtn">
+            <i data-lucide="file-text"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="custom-table" id="taskTable">
+          <thead>
+            <tr>
+              <th data-sort="Project">Project <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="Task Name">Task Name <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="Status">Status <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="Type">Type <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="PIC">PIC / Resource <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="From">From <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="Due Date">Due Date <i data-lucide="arrow-up-down"></i></th>
+              <th data-sort="Overdue Date">Overdue Date <i data-lucide="arrow-up-down"></i></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="table-footer">
+        <div class="pagination-info" id="paginationInfo">
+          Halaman 1 dari 1
+        </div>
+        <div class="pagination-controls">
+          <button class="btn btn-sm btn-ghost" id="prevPageBtn" disabled><i data-lucide="chevron-left"></i>
+            Prev</button>
+          <span class="page-num" id="currentPageNum">1</span>
+          <button class="btn btn-sm btn-ghost" id="nextPageBtn" disabled>Next <i
+              data-lucide="chevron-right"></i></button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>Project Monitoring Dashboard &copy; 2026 | Built for Fast Excel-driven Monitoring & Analytics</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>
